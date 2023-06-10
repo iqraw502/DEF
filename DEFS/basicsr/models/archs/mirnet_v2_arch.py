@@ -251,11 +251,7 @@ class RRG(nn.Module):
         res += x
         return res
 
-
-##########################################################################
-##---------- MIRNet  -----------------------
-import torch
-import torch.nn as nn
+##############################################
 
 class CustomLoss(nn.Module):
     def __init__(self):
@@ -263,6 +259,9 @@ class CustomLoss(nn.Module):
 
     def forward(self, predicted_output, target):
         return nn.MSELoss()(predicted_output, target)
+##########################################################################
+##---------- MIRNet  -----------------------
+
 
 class MIRNet_v2(nn.Module):
     def __init__(self,
