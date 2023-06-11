@@ -252,39 +252,29 @@ class RRG(nn.Module):
         return res
 
 ##############################################
-
-class CustomLoss(nn.Module):
-    def __init__(self):
-        super(CustomLoss, self).__init__()
-
-    def forward(self, predicted_output, target):
-        return nn.MSELoss()(predicted_output, target)
-##########################################################################
-##---------- MIRNet  -----------------------
-
-
 class MIRNet_v2(nn.Module):
     def __init__(self,
-                 inp_channels=3,
-                 out_channels=3,
-                 n_feat=80,
-                 chan_factor=1.5,
-                 n_RRG=4,
-                 n_MRB=2,
-                 height=3,
-                 width=2,
-                 scale=2,
-                 bias=False,
-                 task=None):
+        inp_channels=3,
+        out_channels=3,
+        n_feat=80,
+        chan_factor=1.5,
+        n_RRG=4,
+        n_MRB=2,
+        height=3,
+        width=2,
+        scale=1,
+        bias=False,
+        task= None
+    ):
         super(MIRNet_v2, self).__init__()
 
-        kernel_size = 3
+        kernel_size=3
         self.task = task
 
         self.conv_in = nn.Conv2d(inp_channels, n_feat, kernel_size=3, padding=1, bias=bias)
 
         modules_body = []
-
+        
         modules_body.append(RRG(n_feat, n_MRB, height, width, chan_factor, bias, groups=1))
         modules_body.append(RRG(n_feat, n_MRB, height, width, chan_factor, bias, groups=2))
         modules_body.append(RRG(n_feat, n_MRB, height, width, chan_factor, bias, groups=4))
@@ -293,15 +283,17 @@ class MIRNet_v2(nn.Module):
         self.body = nn.Sequential(*modules_body)
         self.conv_out = nn.Conv2d(n_feat, out_channels, kernel_size=3, padding=1, bias=bias)
         
-        # Instantiate the custom loss function
-        self.loss_function = CustomLoss()
 
-    def forward(self, inp_img, target):
+    def forward(self, inp_img):
         shallow_feats = self.conv_in(inp_img)
         deep_feats = self.body(shallow_feats)
-        
-        out_img = self.conv_out(deep_feats)
 
-        loss = self.loss_function(out_img, target)
+        if self.task == 'defocus_deblurring':
+            deep_feats += shallow_feats
+            out_img = self.conv_out(deep_feats)
 
-        return loss, out_img
+        else:
+            out_img = self.conv_out(deep_feats)
+            out_img += inp_img
+
+        return out_img
